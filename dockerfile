@@ -41,7 +41,7 @@ WORKDIR /app
 
 # Copy release from build stage
 COPY --from=build /app/_build/prod/rel/* ./
-COPY --from=build /app/priv/static ./priv/static
+# COPY --from=build /app/priv/static ./priv/static
 
 # Set environment variables (configure for your app)
 ENV MIX_ENV=prod \
