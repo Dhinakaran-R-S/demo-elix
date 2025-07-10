@@ -24,7 +24,7 @@ RUN mix local.hex --force && \
 
 # Copy only the mix files and deps to cache them
 COPY mix.exs ./phoenix/phoenix_app
-COPY mix.lock ./phoenix/phoenix_app
+# COPY mix.lock ./phoenix/phoenix_app
 COPY config ./phoenix/phoenix_app/config
 
 # Fetch dependencies
