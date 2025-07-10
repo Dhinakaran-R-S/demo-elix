@@ -24,4 +24,4 @@ jobs:
       - name: Build and Push Docker Image
         run: |
           docker build -t dhina12/elixir-app:latest .
-          docker push dhina/elixir-app:latest
+          docker push dhina12/elixir-app:latest
