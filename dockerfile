@@ -1,43 +1,46 @@
-# Use Elixir Alpine image
+# Base Elixir image with Alpine
 FROM elixir:1.18-alpine
 
-# Install system dependencies
-RUN apk add --no-cache \
-  build-base \
-  git \
-  nodejs \
-  npm \
-  inotify-tools \
-  postgresql-client
-
-# Set environment
-ENV MIX_ENV=dev \
+# Set environment variables
+ENV MIX_ENV=prod \
     LANG=C.UTF-8 \
-    PORT=4000
+    MODE=web
+
+# Install dependencies
+RUN apk add --no-cache \
+    build-base \
+    git \
+    nodejs \
+    npm \
+    inotify-tools \
+    openssl
 
 # Set working directory
-WORKDIR /app/phoenix/phoenix_app
+WORKDIR /app
 
-# Install hex + rebar
+# Copy entire app
+COPY . .
+
+# Prepare CLI (in root) and Phoenix app (in /phoenix_app)
+WORKDIR /app/phoenix_app
+
+# Install Hex and Rebar
 RUN mix local.hex --force && \
     mix local.rebar --force
 
-# Copy only the mix files and deps to cache them
-COPY mix.exs ./phoenix/phoenix_app
-# COPY mix.lock ./phoenix/phoenix_app
-COPY config ./phoenix/phoenix_app/config
+# Get Phoenix deps & build assets
+RUN mix deps.get && \
+    npm install --prefix assets && \
+    npm run deploy --prefix assets && \
+    mix phx.digest && \
+    mix compile
 
-# Fetch dependencies
-RUN mix deps.get
-
-# Copy the entire application
-COPY . .
-
-# Install JS dependencies
-RUN cd assets && npm install
-
-# Expose the Phoenix port
+# Expose Phoenix port
 EXPOSE 4000
 
-# Default command to run Phoenix
-CMD ["mix", "phx.server"]
+# Final CMD based on MODE
+WORKDIR /app
+
+CMD ["/bin/sh", "-c", \
+     "if [ \"$MODE\" = \"cli\" ]; then mix run demo.ex; \
+      else cd phoenix_app && mix phx.server; fi"]
