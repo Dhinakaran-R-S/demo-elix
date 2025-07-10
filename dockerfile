@@ -13,7 +13,6 @@ RUN mix local.hex --force && \
 
 # Copy mix files
 COPY mix.exs /app/phoenix/phoenix_app
-COPY config /app/phoenix/phoenix_app/config ./
 
 # Fetch dependencies
 RUN mix deps.get --only prod
