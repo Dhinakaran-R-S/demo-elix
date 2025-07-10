@@ -26,6 +26,8 @@ RUN MIX_ENV=prod mix compile
 # Install Node dependencies & build assets
 WORKDIR /app/assets
 
+RUN mix compile
+RUN mix phx.digest
 
 # Digest assets
 WORKDIR /app
@@ -52,4 +54,4 @@ ENV MIX_ENV=prod \
 EXPOSE 4000
 
 # Run the Phoenix app
-CMD ["mix","phx.server"]
+CMD ["phx.server"]
