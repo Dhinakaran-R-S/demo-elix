@@ -25,8 +25,7 @@ RUN MIX_ENV=prod mix compile
 
 # Install Node dependencies & build assets
 WORKDIR /app/assets
-RUN npm install
-RUN npm run deploy
+
 
 # Digest assets
 WORKDIR /app
