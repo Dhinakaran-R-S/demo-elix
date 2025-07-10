@@ -1,54 +1,47 @@
-# Stage 1: Build Elixir + assets
-FROM elixir:1.18-alpine AS build
+# base Elixir image with build tools
+FROM hexpm/elixir:1.15.0-erlang-26.0.2-alpine-3.18.0 AS build
 
-# Install required packages
-RUN apk add --no-cache build-base nodejs npm git python3
+# install build dependencies
+RUN apk add --no-cache build-base git npm python3
 
-# Set working directory
-WORKDIR /app/phoenix/phoenix_app
-
-# Install hex & rebar
+# install Hex and Rebar
 RUN mix local.hex --force && \
     mix local.rebar --force
 
-# Copy mix files
-COPY mix.exs /app/phoenix/phoenix_app
+# set working directory
+WORKDIR /app
 
-# Fetch dependencies
+# set environment
+ENV MIX_ENV=prod
+
+# cache deps
+COPY mix.exs mix.lock ./
+COPY config config
 RUN mix deps.get --only prod
+RUN mix deps.compile
 
-# Copy the rest of the project
-COPY . .
-
-# Compile the project
-RUN MIX_ENV=prod mix compile
-
-# Install Node dependencies & build assets
-WORKDIR /app/assets
-
-RUN mix compile
+# build assets
+COPY assets assets
+RUN cd assets && npm install && npm run deploy
 RUN mix phx.digest
 
-# Digest assets
-# RUN MIX_ENV=prod mix phx.digest
+# build project
+COPY lib lib
+COPY priv priv
+RUN mix compile
+RUN mix release
 
-# Stage 2: Create minimal release image
-FROM alpine:3.19 AS app
+# Final stage: slim production image
+FROM alpine:3.18 AS app
 
-# Install runtime dependencies
 RUN apk add --no-cache libstdc++ openssl ncurses-libs
 
-# Copy release from build stage
-# COPY --from=build /app/_build/prod/rel/* ./
-# COPY --from=build /app/priv/static ./priv/static
+WORKDIR /app
 
-# Set environment variables (configure for your app)
-ENV MIX_ENV=prod \
-    PHX_SERVER=true \
-    PORT=4000
+COPY --from=build /app/_build/prod/rel/phoenix_app ./
 
-# Expose Phoenix default port
-EXPOSE 4000
+ENV HOME=/app \
+    MIX_ENV=prod \
+    LANG=en_US.UTF-8
 
-# Run the Phoenix app
-CMD ["mix","phx.server"]
+CMD ["bin/phoenix_app", "start"]
