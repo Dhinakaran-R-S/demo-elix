@@ -5,15 +5,16 @@ FROM elixir:1.18-alpine AS build
 RUN apk add --no-cache build-base nodejs npm git python3
 
 # Set working directory
-WORKDIR /app
+WORKDIR /app/phoenix/phoenix_app
 
 # Install hex & rebar
 RUN mix local.hex --force && \
     mix local.rebar --force
 
 # Copy mix files
-COPY mix.exs mix.lock ./
-COPY config config
+COPY mix.exs /app/phoenix/phoenix_app
+COPY mix.lock /app/phoenix/phoenix_app
+COPY config /app/phoenix/phoenix_app/config
 
 # Fetch dependencies
 RUN mix deps.get --only prod
