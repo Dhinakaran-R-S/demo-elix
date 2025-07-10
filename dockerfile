@@ -29,7 +29,7 @@ WORKDIR /app/assets
 
 # Digest assets
 WORKDIR /app
-RUN MIX_ENV=prod mix phx.digest
+# RUN MIX_ENV=prod mix phx.digest
 
 # Stage 2: Create minimal release image
 FROM alpine:3.19 AS app
