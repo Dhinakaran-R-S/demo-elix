@@ -23,5 +23,5 @@ jobs:
 
       - name: Build and Push Docker Image
         run: |
-          docker build -t dhina12/elixir-app:2.0 .
-          docker push dhina12/elixir-app:2.0
+          docker build -t dhina12/elixir-app:3.0 .
+          docker push dhina12/elixir-app:3.0
