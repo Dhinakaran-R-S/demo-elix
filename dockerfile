@@ -54,4 +54,4 @@ ENV MIX_ENV=prod \
 EXPOSE 4000
 
 # Run the Phoenix app
-CMD ["phx.server"]
+CMD ["mix","phx.server"]
