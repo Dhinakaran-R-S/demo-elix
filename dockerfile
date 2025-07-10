@@ -30,7 +30,6 @@ RUN mix compile
 RUN mix phx.digest
 
 # Digest assets
-WORKDIR /app
 # RUN MIX_ENV=prod mix phx.digest
 
 # Stage 2: Create minimal release image
@@ -38,8 +37,6 @@ FROM alpine:3.19 AS app
 
 # Install runtime dependencies
 RUN apk add --no-cache libstdc++ openssl ncurses-libs
-
-WORKDIR /app
 
 # Copy release from build stage
 # COPY --from=build /app/_build/prod/rel/* ./
