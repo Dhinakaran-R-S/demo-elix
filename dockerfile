@@ -1,46 +1,42 @@
-# Base Elixir image with Alpine
-FROM elixir:1.18-alpine
-
-# Set environment variables
-ENV MIX_ENV=prod \
-    LANG=C.UTF-8 \
-    MODE=web
+# Use Elixir image with Alpine base
+FROM elixir:1.18-alpine AS build
 
 # Install dependencies
-RUN apk add --no-cache \
-    build-base \
-    git \
-    nodejs \
-    npm \
-    inotify-tools \
-    openssl
+RUN apk add --no-cache build-base npm git curl nodejs
 
 # Set working directory
 WORKDIR /app
 
-# Copy entire app
-COPY . .
+# Set environment
+ENV MIX_ENV=prod
 
-# Prepare CLI (in root) and Phoenix app (in /phoenix_app)
-WORKDIR /app/phoenix_app
-
-# Install Hex and Rebar
+# Copy mix files and install dependencies
+COPY mix.exs mix.lock ./
+COPY config config
 RUN mix local.hex --force && \
-    mix local.rebar --force
+    mix local.rebar --force && \
+    mix deps.get --only prod
 
-# Get Phoenix deps & build assets
-RUN mix deps.get && \
-    npm install --prefix assets && \
-    npm run deploy --prefix assets && \
-    mix phx.digest && \
-    mix compile
+# Copy source files
+COPY lib lib
+COPY priv priv
 
-# Expose Phoenix port
+# Compile the project
+RUN mix compile
+
+# Create release
+RUN mix release
+
+# Final runtime stage
+FROM alpine:3.19 AS app
+
+RUN apk add --no-cache libstdc++ openssl ncurses
+
+# Copy release from build stage
+COPY --from=build /app/_build/prod/rel/phoenix_app ./
+
+# Expose Phoenix default port
 EXPOSE 4000
 
-# Final CMD based on MODE
-WORKDIR /app
-
-CMD ["/bin/sh", "-c", \
-     "if [ \"$MODE\" = \"cli\" ]; then mix run demo.ex; \
-      else cd phoenix_app && mix phx.server; fi"]
+# Start the server
+CMD ["bin/phoenix_app", "start"]
