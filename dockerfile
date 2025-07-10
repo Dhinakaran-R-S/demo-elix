@@ -1,5 +1,5 @@
 # base Elixir image with build tools
-FROM hexpm/elixir:1.15.0-erlang-26.0.2-alpine-3.18.0 AS build
+FROM elixir:1.15.0-erlang-26.0.2-alpine-3.18.0 AS build
 
 # install build dependencies
 RUN apk add --no-cache build-base git npm python3
