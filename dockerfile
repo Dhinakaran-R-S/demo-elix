@@ -16,16 +16,16 @@ ENV MIX_ENV=dev \
     PORT=4000
 
 # Set working directory
-WORKDIR /app/phoenix
+WORKDIR /app/phoenix/phoenix_app
 
 # Install hex + rebar
 RUN mix local.hex --force && \
     mix local.rebar --force
 
 # Copy only the mix files and deps to cache them
-COPY mix.exs ./phoenix
-COPY mixlock ./phoenix
-COPY config ./phoenix
+COPY mix.exs ./phoenix/phoenix_app
+COPY mix.lock ./phoenix/phoenix_app
+COPY config ./phoenix/phoenix_app/config
 
 # Fetch dependencies
 RUN mix deps.get
