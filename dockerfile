@@ -23,7 +23,7 @@ RUN mix local.hex --force && \
     mix local.rebar --force
 
 # Copy only the mix files and deps to cache them
-COPY /app/phoenix/mix.exs /app/phoenix/mixlock ./
+COPY /app/phoenix/mix.exs mix.exs /app/phoenix/mixlock ./
 COPY /app/phoenix/config ./config
 
 # Fetch dependencies
