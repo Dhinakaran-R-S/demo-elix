@@ -1,8 +1,8 @@
-# Use Elixir image with Alpine base
+# ---------- Stage 1: Build ----------
 FROM elixir:1.18-alpine AS build
 
-# Install dependencies
-RUN apk add --no-cache build-base npm git curl nodejs
+# Install required packages
+RUN apk add --no-cache build-base git nodejs npm
 
 # Set working directory
 WORKDIR /app
@@ -10,33 +10,37 @@ WORKDIR /app
 # Set environment
 ENV MIX_ENV=prod
 
-# Copy mix files and install dependencies
+# Install hex and rebar
+RUN mix local.hex --force && \
+    mix local.rebar --force
+
+# Copy mix files and fetch deps
 COPY mix.exs mix.lock ./
 COPY config config
-RUN mix local.hex --force && \
-    mix local.rebar --force && \
-    mix deps.get --only prod
+RUN mix deps.get --only prod
 
-# Copy source files
+# Copy application code
 COPY lib lib
 COPY priv priv
 
-# Compile the project
+# Compile and build release
 RUN mix compile
-
-# Create release
 RUN mix release
 
-# Final runtime stage
+# ---------- Stage 2: Runtime ----------
 FROM alpine:3.19 AS app
 
+# Install runtime dependencies
 RUN apk add --no-cache libstdc++ openssl ncurses
 
-# Copy release from build stage
+# Set working directory
+WORKDIR /app
+
+# Copy release from the build stage
 COPY --from=build /app/_build/prod/rel/phoenix_app ./
 
-# Expose Phoenix default port
+# Expose Phoenix port
 EXPOSE 4000
 
-# Start the server
+# Default start command
 CMD ["bin/phoenix_app", "start"]
