@@ -6,58 +6,55 @@ FROM elixir:1.15-alpine AS build
 # Install build tools
 RUN apk add --no-cache build-base git nodejs npm python3
 
-# Set working directory
+# Set working directory to phoenix app
 WORKDIR /app
 
-# Install hex and rebar
+# Install Hex & Rebar
 RUN mix local.hex --force && mix local.rebar --force
 
 # Copy mix files
-COPY mix.exs mix.lock ./
-COPY config config
+COPY phoenix/phoenix_app/mix.exs phoenix/phoenix_app/mix.lock ./
+COPY phoenix/phoenix_app/config ./config
 
-# Install dependencies
+# Fetch deps
 RUN mix deps.get --only prod
 
-# Copy app source
-COPY lib lib
-COPY priv priv
+# Copy rest of the Phoenix app
+COPY phoenix/phoenix_app/lib ./lib
+COPY phoenix/phoenix_app/priv ./priv
+COPY phoenix/phoenix_app/assets ./assets
 
-# Build assets
+# Build frontend assets
 WORKDIR /app/assets
-COPY assets ./
 RUN npm install && npm run deploy
-RUN mix phx.digest
 
-# Compile project
+# Back to root and digest
 WORKDIR /app
-RUN MIX_ENV=prod mix compile
+RUN MIX_ENV=prod mix phx.digest
 
-# Generate release
+# Compile and release
+RUN MIX_ENV=prod mix compile
 RUN MIX_ENV=prod mix release
 
 # =============================
-# Stage 2: Release Container
+# Stage 2: Minimal runtime container
 # =============================
 FROM alpine:3.19 AS app
 
-# Install runtime dependencies
 RUN apk add --no-cache libstdc++ openssl ncurses-libs
 
-# Set app working directory
 WORKDIR /app
 
-# Set environment variables
+# Set environment
 ENV MIX_ENV=prod \
     LANG=en_US.UTF-8 \
     PHX_SERVER=true \
     PORT=4000
 
-# Copy release from build
+# Replace `phoenix_app` with your actual app name in mix.exs if different
 COPY --from=build /app/_build/prod/rel/phoenix_app ./
 
-# Expose Phoenix default port
 EXPOSE 4000
 
-# Run the Phoenix app
+# Launch the Phoenix server
 CMD ["bin/phoenix_app", "start"]
