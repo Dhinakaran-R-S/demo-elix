@@ -1,57 +1,63 @@
-# Stage 1: Build Elixir + assets
-FROM elixir:1.18-alpine AS build
+# =============================
+# Stage 1: Build Elixir + Phoenix
+# =============================
+FROM elixir:1.15-alpine AS build
 
-# Install required packages
-RUN apk add --no-cache build-base nodejs npm git python3
+# Install build tools
+RUN apk add --no-cache build-base git nodejs npm python3
 
 # Set working directory
-WORKDIR /app/phoenix/phoenix_app
+WORKDIR /app
 
-# Install hex & rebar
-RUN mix local.hex --force && \
-    mix local.rebar --force
+# Install hex and rebar
+RUN mix local.hex --force && mix local.rebar --force
 
 # Copy mix files
-COPY mix.exs /app/phoenix/phoenix_app
+COPY mix.exs mix.lock ./
+COPY config config
 
-# Fetch dependencies
+# Install dependencies
 RUN mix deps.get --only prod
 
-# Copy the rest of the project
-COPY . .
+# Copy app source
+COPY lib lib
+COPY priv priv
 
-# Compile the project
-RUN MIX_ENV=prod mix compile
-
-# Install Node dependencies & build assets
+# Build assets
 WORKDIR /app/assets
-
-RUN mix compile
+COPY assets ./
+RUN npm install && npm run deploy
 RUN mix phx.digest
 
-# Digest assets
+# Compile project
 WORKDIR /app
-# RUN MIX_ENV=prod mix phx.digest
+RUN MIX_ENV=prod mix compile
 
-# Stage 2: Create minimal release image
+# Generate release
+RUN MIX_ENV=prod mix release
+
+# =============================
+# Stage 2: Release Container
+# =============================
 FROM alpine:3.19 AS app
 
 # Install runtime dependencies
 RUN apk add --no-cache libstdc++ openssl ncurses-libs
 
+# Set app working directory
 WORKDIR /app
 
-# Copy release from build stage
-# COPY --from=build /app/_build/prod/rel/* ./
-# COPY --from=build /app/priv/static ./priv/static
-
-# Set environment variables (configure for your app)
+# Set environment variables
 ENV MIX_ENV=prod \
+    LANG=en_US.UTF-8 \
     PHX_SERVER=true \
     PORT=4000
+
+# Copy release from build
+COPY --from=build /app/_build/prod/rel/phoenix_app ./
 
 # Expose Phoenix default port
 EXPOSE 4000
 
 # Run the Phoenix app
-CMD ["mix", "run", "--no-halt"]
+CMD ["bin/phoenix_app", "start"]
