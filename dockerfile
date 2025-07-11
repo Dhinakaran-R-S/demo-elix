@@ -26,7 +26,7 @@ COPY phoenix/phoenix_app/assets ./assets
 
 # Build frontend assets
 WORKDIR /app/assets
-RUN npm install && npm run deploy
+# RUN npm install && npm run deploy
 
 # Back to root and digest
 WORKDIR /app
